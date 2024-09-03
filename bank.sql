@@ -4,14 +4,14 @@ use bank;
 -- Creating the Customers Table
 CREATE TABLE Customers (
     customer_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name VARCHAR(100) NOT NULL,
+    name VARCHAR(50) NOT NULL,
     address VARCHAR(255) NOT NULL,
-    contact_number VARCHAR(15) NOT NULL,
-    email VARCHAR(100),
+    contact_number CHAR(10) NOT NULL,
+    email VARCHAR(50),
     date_of_birth DATE,
     pan_number CHAR(10),
     aadhaar_number CHAR(12),
-    passport_number VARCHAR(8),
+    passport_number CHAR(8),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -19,12 +19,12 @@ CREATE TABLE Customers (
 -- Creating the Accounts Table
 CREATE TABLE Accounts (
     account_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    account_number CHAR(10) NOT NULL UNIQUE,
-    account_type VARCHAR(50) NOT NULL,
+    account_number CHAR(12) NOT NULL UNIQUE,
+    account_type ENUM('Savings', 'Current') NOT NULL,
     branch_code CHAR(5) NOT NULL,
     customer_id INTEGER NOT NULL,
     initial_deposit DECIMAL(10,2),
-    mode_of_operation VARCHAR(50),
+    mode_of_operation ENUM('Single', 'Joint') NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (customer_id) REFERENCES Customers(customer_id)
@@ -34,7 +34,7 @@ CREATE TABLE Accounts (
 -- Creating the Nominees Table
 CREATE TABLE Nominees (
     nominee_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name VARCHAR(100) NOT NULL,
+    name VARCHAR(50) NOT NULL,
     relationship VARCHAR(50) NOT NULL,
     address VARCHAR(255) NOT NULL,
     customer_id INTEGER NOT NULL,
@@ -59,7 +59,7 @@ CREATE TABLE ServiceRequests (
 -- Creating the Documents Table
 CREATE TABLE Documents (
     document_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    document_type VARCHAR(50) NOT NULL,
+    document_type ENUM('PAN Card', 'Aadhaar Card') NOT NULL,
     document_number VARCHAR(20) NOT NULL,
 
 
@@ -90,7 +90,7 @@ INSERT INTO Nominees (name, relationship, address, customer_id)
 VALUES
 ('Nitu Kumari', 'Mother', '123 Main St, New Delhi', 1),
 ('Arvind Sharma', 'Father', '456 Elm St, Mumbai', 2),
-('Ashok Kaushik', 'Father', '789 Oak St, Bengaluru', 3),
+('Usha Kaushik', 'Mother', '789 Oak St, Bengaluru', 3),
 ('Sona Anand', 'Mother', '321 Pine St, Chennai', 4);
 
 -- Inserting Data into the Service Requests Table
