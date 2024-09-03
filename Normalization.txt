@@ -1,0 +1,149 @@
+## Step-by-Step Normalization Process: From Unnormalized to 1NF and 2NF
+
+---
+
+Scenario: We start with an unnormalized table that contains all the data for the bank's customers, accounts, nominees, service requests, and documents. This table has multiple issues, such as repeating groups, non-atomic data, and partial dependencies. We will go through the process of normalizing this table step by step.
+
+---
+
+### Step 1: Unnormalized Form (UNF)
+
+Unnormalized Table: This table contains all the data in a single table without any regard for atomicity, uniqueness, or dependencies.
+
+
+Unnormalized Table: BankData
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+| customer_id | name          | address          | contact_number | email            | date_of_birth | pan_number | aadhaar_number | passport_number | account_id | account_number | account_type   | branch_code | initial_deposit | mode_of_operation | nominee_name   | nominee_relationship| nominee_address | service_type           | service_status | document_type            | document_number  |
+|-------------|---------------|------------------|----------------|------------------|---------------|------------|----------------|-----------------|------------|----------------|----------------|-------------|-----------------|-------------------|----------------|--------------------|------------------|------------------------|-----------------|-------------------------|------------------|
+| 1           | Anjali Kumari | 123 Main St      | 9876543210     | anjali@example.com | 1990-01-15    | ABCDE1234F | 123456789012   | N1234567        | 101        | ACC1234561     | Savings      | BR001       | 10000.00        | Single            | Nitu Kumari  | Mother               | 123 Main St      | Cheque Book Request    | Completed       | PAN Card                | ABCDE1234F       |
+| 2           | Anurag Sharma | 456 Elm St       | 9876543211     | anurag@example.com | 1988-05-20    | BCDEA2345G | 234567890123   | N2345678        | 102        | ACC1234562     | Savings      | BR002       | 20000.00        | Joint             | Arvind Sharma| Father               | 456 Elm St       | Address Change Request | Pending         | Aadhaar Card            | 234567890123     |
+| 3           | Vishal Kaushik| 789 Oak St       | 9876543212     | vishal@example.com | 1992-07-10    | CDEAB3456H | 345678901234   | N3456789        | 103        | ACC1234563     | Current      | BR003       | 15000.00        | Single            | Usha Kaushik | Mother               | 789 Oak St       | ATM Card Request       | Completed       | PAN Card                | CDEAB3456H       |
+| 4           | Rithika Anand | 321 Pine St      | 9876543213     | rithika@example.com | 1995-09-25   | DEABC4567I | 456789012345   | N4567890        | 104        | ACC1234564     | Savings      | BR004       | 25000.00        | Single            | Sona Anand   | Mother               | 321 Pine St      | Mobile Number Update   | Pending         | Aadhaar Card            | 456789012345     |
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+```
+
+---
+
+### Step 2: Convert to 1NF (First Normal Form)
+
+Issues in UNF:
+- The table contains non-atomic values, such as nominee information and service requests, which are not separated into their own columns.
+
+Steps to Achieve 1NF:
+1. Eliminate Repeating Groups: Separate the nominee and service request information into their own rows, creating new tables as needed.
+2. Ensure Atomicity: Each field should contain only atomic values (indivisible).
+
+Resulting Tables After 1NF:
+
+1. Customers Table:
+   - This table contains only customer-specific information.
+
+```sql
+CREATE TABLE Customers (
+    customer_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name VARCHAR(50) NOT NULL,
+    address VARCHAR(255) NOT NULL,
+    contact_number CHAR(10) NOT NULL,
+    email VARCHAR(50),
+    date_of_birth DATE,
+    pan_number CHAR(10),
+    aadhaar_number CHAR(12),
+    passport_number CHAR(8),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+2. Accounts Table:
+   - Account-specific information is separated out and associated with the customer via a foreign key.
+
+```sql
+CREATE TABLE Accounts (
+    account_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    account_number CHAR(12) NOT NULL UNIQUE,
+    account_type ENUM('Savings', 'Current') NOT NULL,
+    branch_code CHAR(5) NOT NULL,
+    customer_id INTEGER NOT NULL,
+    initial_deposit DECIMAL(10,2),
+    mode_of_operation ENUM('Single', 'Joint') NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (customer_id) REFERENCES Customers(customer_id)
+        ON DELETE CASCADE ON UPDATE CASCADE
+);
+```
+
+3. Nominees Table:
+   - Nominee details are separated into their own table.
+
+```sql
+CREATE TABLE Nominees (
+    nominee_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name VARCHAR(50) NOT NULL,
+    relationship VARCHAR(50) NOT NULL,
+    address VARCHAR(255) NOT NULL,
+    customer_id INTEGER NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (customer_id) REFERENCES Customers(customer_id)
+        ON DELETE CASCADE ON UPDATE CASCADE
+);
+```
+
+4. Service Requests Table:
+   - Service requests are separated into their own table.
+
+```sql
+CREATE TABLE ServiceRequests (
+    service_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    service_type VARCHAR(100) NOT NULL,
+    status VARCHAR(50) DEFAULT 'Pending',
+    customer_id INTEGER NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (customer_id) REFERENCES Customers(customer_id)
+        ON DELETE CASCADE ON UPDATE CASCADE
+);
+```
+
+5. Documents Table:
+   - Document details are stored in a separate table.
+
+```sql
+CREATE TABLE Documents (
+    document_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    document_type ENUM('PAN Card', 'Aadhaar Card') NOT NULL,
+    document_number VARCHAR(20) NOT NULL,
+    customer_id INTEGER NOT NULL,
+    uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (customer_id) REFERENCES Customers(customer_id)
+        ON DELETE CASCADE ON UPDATE CASCADE
+);
+```
+
+---
+
+### Step 3: Convert to 2NF (Second Normal Form)
+
+Issues in 1NF:
+- While 1NF has been achieved, there could still be partial dependencies if any table has a composite primary key (though in this case, it does not). We need to ensure that all non-key attributes are fully dependent on the entire primary key.
+
+Steps to Achieve 2NF:
+1. Check for Partial Dependencies: Since there are no composite keys in the current schema, no partial dependencies exist. However, if there were, they would need to be removed by creating additional tables.
+2. Ensure Full Dependency: Ensure every non-key attribute is fully dependent on the primary key.
+
+Resulting Tables After 2NF:
+- The database schema remains as designed after 1NF because all non-key attributes are already fully dependent on their respective primary keys.
+
+### Summary
+
+Unnormalized Form (UNF):
+- All data was stored in a single table with repeating groups and non-atomic values.
+
+First Normal Form (1NF):
+- The data was organized into separate tables for customers, accounts, nominees, service requests, and documents. Atomicity was achieved, and repeating groups were removed.
+
+Second Normal Form (2NF):
+- Since the schema did not involve composite keys, there were no partial dependencies, and the structure remained the same. All non-key attributes are fully dependent on the primary key.
+
+This step-by-step process ensures that the database is normalized, reducing redundancy and improving data integrity.
